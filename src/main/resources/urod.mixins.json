@@ -1,10 +1,8 @@
 {
   "required": true,
-  "package": "net.udo.mixin",
+  "package": "net.urod.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "BlockMixin",
-    "UltraDenseOreBlockMixin"
   ],
   "client": [
   ],

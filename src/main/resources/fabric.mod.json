@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "modid",
   "version": "${version}",
-  "name": "Ultra Dense Ore",
+  "name": "Ultra Rich Ore Deposits",
   "description": "A new way to set and forget ore",
   "authors": [
     "engiwengi"
@@ -12,14 +12,14 @@
     "sources": "https://github.com/engiwengi/udo"
   },
   "license": "Apache-2.0",
-  "icon": "assets/udo/icon.png",
+  "icon": "assets/urod/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.udo.UltraDenseOre"
+      "net.urod.UltraRichOreDeposits"
     ]
   },
   "mixins": [
-    "ultra.dense.ore.mixins.json"
+    "urod.mixins.json"
   ]
 }
