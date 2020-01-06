@@ -1,116 +1,96 @@
 package net.urod.block.entity;
 
+import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
+import net.urod.UltraRichOreDeposits;
+import net.urod.block.UltraRichOreBlock;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Objects;
 
-public class UltraRichOreBlockEntity extends BlockEntity {
-    private boolean hasCheckedNeighbours = false;
-    private BlockPos masterPos = new BlockPos(0, 256, 0); // 256 is invalid height so it's just an invalid pos
-    private boolean isMaster, hasMaster;
+public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityClientSerializable {
+    private int quantity = -1;
+    private int attackTimes = 0;
+    private int j = 0;
 
     public UltraRichOreBlockEntity() {
-        super(BlockEntities.ULTRA_COAL_ORE);
-    }
-
-    @Override
-    public void setWorld(World world, BlockPos blockPos) {
-        super.setWorld(world, blockPos);
-    }
-
-    private List<BlockEntity> getNeighbours(IWorld iWorld) {
-        List<BlockEntity> neighbours = new ArrayList<>();
-        neighbours.add(iWorld.getBlockEntity(pos.up()));
-        neighbours.add(iWorld.getBlockEntity(pos.down()));
-        neighbours.add(iWorld.getBlockEntity(pos.north()));
-        neighbours.add(iWorld.getBlockEntity(pos.east()));
-        neighbours.add(iWorld.getBlockEntity(pos.south()));
-        neighbours.add(iWorld.getBlockEntity(pos.west()));
-        return neighbours;
+        super(ModBlockEntities.ULTRA_RICH_ORE);
     }
 
     @Override
     public CompoundTag toTag(CompoundTag tag) {
         super.toTag(tag);
-        tag.putLong("masterPos", masterPos.asLong());
-        tag.putBoolean("isMaster", isMaster);
-        tag.putBoolean("hasMaster", hasMaster);
+        tag.putInt("quantity", quantity);
         return tag;
+    }
+
+    public void onAttack(ServerWorld serverWorld, PlayerEntity player, BlockState state) {
+        boolean shouldFakeBreak = false;
+        attackTimes += player.getBlockBreakingSpeed(state);
+        UltraRichOreDeposits.getLogger().info("mined");
+        if (attackTimes > 30) {
+            UltraRichOreDeposits.getLogger().info("got item");
+            attackTimes = 0;
+            shouldFakeBreak = decrement();
+        }
+
+        if (shouldFakeBreak) {
+            serverWorld.playLevelEvent(2001, pos, Block.getRawIdFromState(state));
+            Block.dropStacks(state, serverWorld, pos);
+        }
+        sync();
     }
 
     @Override
     public void fromTag(CompoundTag tag) {
         super.fromTag(tag);
-        masterPos = BlockPos.fromLong(tag.getLong("masterPos"));
-        isMaster = tag.getBoolean("isMaster");
-        hasMaster = tag.getBoolean("hasMaster");
+        quantity = (tag.contains("quantity")) ? tag.getInt("quantity") : -1;
     }
 
-    private boolean checkMaster(IWorld iWorld) {
-        return iWorld.getBlockEntity(masterPos) instanceof UltraRichOreBlockEntity;
-    }
-
-    public void scheduledTick() {
-        if (hasWorld() && !world.isClient()) {
-            if (!hasMaster) {
-                BlockPos newMasterPos = tryGetNeighboursMaster(world);
-                if (newMasterPos != null) {
-                    setMaster(newMasterPos);
-                } else {
-                    setMaster(pos);
-                    isMaster = true;
-                }
-            }
+    private boolean decrement() {
+        markDirty();
+        Objects.requireNonNull(world, String.format("decrement called on %s before world was set", toString()));
+        if (quantity < 0) {
+            initQuantity(world);
         }
-    }
-
-    private BlockPos tryGetNeighboursMaster(IWorld iWorld) {
-        hasCheckedNeighbours = true;
-        if (hasMaster) {
-            return masterPos;
+        quantity--;
+        markDirty();
+        if (quantity == 0) {
+            onEmpty(world);
+            return false;
         } else {
-            BlockPos newMasterPos = null;
-            for (BlockEntity neighbour : getNeighbours(iWorld)) {
-                if (neighbour instanceof UltraRichOreBlockEntity) {
-                    if (((UltraRichOreBlockEntity) neighbour).hasMaster()) {
-                        newMasterPos = ((UltraRichOreBlockEntity) neighbour).getMasterPos();
-                    } else if (!((UltraRichOreBlockEntity) neighbour).hasCheckedNeighbours()) {
-                        newMasterPos = ((UltraRichOreBlockEntity) neighbour).tryGetNeighboursMaster(iWorld);
-                    }
-
-                    if (newMasterPos != null) {
-                        return newMasterPos;
-                    }
-                }
-            }
-            return null;
+            return true;
         }
     }
 
-    public boolean hasMaster() {
-        return hasMaster;
+    private void onEmpty(IWorld iWorld) {
+        iWorld.breakBlock(pos, false);
     }
 
-    public boolean isMaster() {
-        return isMaster;
-    }
-
-    public void setMaster(BlockPos newMasterPos) {
-        hasMaster = true;
-        masterPos = newMasterPos;
+    private void initQuantity(IWorld iWorld) {
+        BlockState state = iWorld.getBlockState(pos);
+        quantity = state.get(UltraRichOreBlock.QUALITY).getNewQuantity(state.getBlock());
         markDirty();
     }
 
-    public BlockPos getMasterPos() {
-        return masterPos;
+    public float calcBlockBreakingDelta() {
+        return 1.0F / quantity;
     }
 
-    public boolean hasCheckedNeighbours() {
-        return hasCheckedNeighbours;
+    @Override
+    public void fromClientTag(CompoundTag compoundTag) {
+        fromTag(compoundTag);
     }
+
+    @Override
+    public CompoundTag toClientTag(CompoundTag compoundTag) {
+        return toTag(compoundTag);
+    }
+
+    // TODO: instead of calling onattack over and over, schedule ticks until stop mining
 }

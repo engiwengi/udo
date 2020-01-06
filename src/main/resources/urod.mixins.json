@@ -3,6 +3,7 @@
   "package": "net.urod.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "ServerPlayerInteractionManagerMixin"
   ],
   "client": [
   ],

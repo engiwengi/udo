@@ -6,11 +6,11 @@ import net.minecraft.util.registry.Registry;
 import net.urod.UltraRichOreDeposits;
 import net.urod.block.ModBlocks;
 
-public class BlockEntities {
-    public static final BlockEntityType<UltraRichOreBlockEntity> ULTRA_COAL_ORE = BlockEntities.register("ultra_rich_coal_ore",
-            BlockEntityType.Builder.create(UltraRichOreBlockEntity::new, ModBlocks.ULTRA_COAL_ORE).build(null));
+public class ModBlockEntities {
+    public static final BlockEntityType<UltraRichOreBlockEntity> ULTRA_RICH_ORE = ModBlockEntities.register("ultra_rich_ore",
+            BlockEntityType.Builder.create(UltraRichOreBlockEntity::new, ModBlocks.ULTRA_COAL_ORE, ModBlocks.ULTRA_DIAMOND_ORE).build(null));
 
-    public BlockEntities() {
+    public ModBlockEntities() {
         UltraRichOreDeposits.getLogger().info(String.format("Registering %s Block Entites", UltraRichOreDeposits.MOD_ID));
     }
 
