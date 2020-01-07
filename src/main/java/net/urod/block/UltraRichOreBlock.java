@@ -1,5 +1,6 @@
 package net.urod.block;
 
+import net.fabricmc.fabric.api.block.BlockAttackInteractionAware;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -9,13 +10,16 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 import net.urod.block.entity.UltraRichOreBlockEntity;
 import net.urod.state.property.QualityProperty;
 import net.urod.util.Quality;
 
-public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider {
+public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider, BlockAttackInteractionAware {
     public static final QualityProperty QUALITY = QualityProperty.of("quantity");
 
     UltraRichOreBlock(Settings settings) {
@@ -63,5 +67,10 @@ public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider {
     @Override
     public BlockEntity createBlockEntity(BlockView view) {
         return new UltraRichOreBlockEntity();
+    }
+
+    @Override
+    public boolean onAttackInteraction(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, Direction direction) {
+        return false;
     }
 }

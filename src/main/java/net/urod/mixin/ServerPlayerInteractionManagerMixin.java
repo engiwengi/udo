@@ -5,14 +5,17 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
+import net.minecraft.server.network.packet.PlayerActionC2SPacket;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.urod.UltraRichOreDeposits;
 import net.urod.block.UltraRichOreBlock;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ServerPlayerInteractionManager.class)
@@ -30,6 +33,11 @@ public class ServerPlayerInteractionManagerMixin {
         if (block instanceof UltraRichOreBlock) {
             ((UltraRichOreBlock) block).onBreaking(player, blockState, world, blockPos);
         }
+    }
+
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;extinguishFire(Lnet/minecraft/entity/player/PlayerEntity;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z"), method = "processBlockBreakingAction")
+    private void onStartDestroyBlock(BlockPos pos, PlayerActionC2SPacket.Action action, Direction direction, int worldHeight, CallbackInfo ci) {
+
     }
 
     //TODO: create callbacks for start and stop mining instead

@@ -15,4 +15,4 @@
   - [ ] Silk Touch upgrade
  
 - [ ] Soil Sampler Item
-  - [ ] Describes nearby rich ore deposits when right clicked on grass\
+  - [x] Describes nearby rich ore deposits when right clicked on grass
