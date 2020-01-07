@@ -21,10 +21,10 @@ public class QualityAmountConfig {
     private static Map<Block, Map<Quality, Range>> getDefault() {
         Map<Block, Map<Quality, Range>> newMap = Maps.newHashMap();
         Map<Quality, Range> coalMap = Maps.newHashMap();
-        coalMap.put(Quality.POOR, new Range(16, 32));
-        coalMap.put(Quality.MEDIUM, new Range(32, 64));
-        coalMap.put(Quality.HIGH, new Range(64, 128));
-        coalMap.put(Quality.ULTRA, new Range(128, 256));
+        coalMap.put(Quality.POOR, new Range(8, 16));
+        coalMap.put(Quality.MEDIUM, new Range(16, 32));
+        coalMap.put(Quality.HIGH, new Range(32, 64));
+        coalMap.put(Quality.ULTRA, new Range(64, 128));
         newMap.put(ModBlocks.ULTRA_COAL_ORE, coalMap);
         return newMap;
     }

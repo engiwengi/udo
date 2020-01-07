@@ -23,12 +23,12 @@ public enum Quality implements StringIdentifiable {
     }
 
     public static Quality getRandomly() {
-        int randInt = ThreadLocalRandom.current().nextInt(10);
-        if (randInt < 2) {
+        int randInt = ThreadLocalRandom.current().nextInt(100);
+        if (randInt < 40) {
             return Quality.POOR;
-        } else if (randInt < 6) {
+        } else if (randInt < 75) {
             return Quality.MEDIUM;
-        } else if (randInt < 8) {
+        } else if (randInt < 95) {
             return Quality.HIGH;
         } else {
             return Quality.ULTRA;

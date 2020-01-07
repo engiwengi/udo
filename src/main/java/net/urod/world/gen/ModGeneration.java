@@ -5,13 +5,13 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.GenerationStep;
 import net.minecraft.world.gen.decorator.ConfiguredDecorator;
-import net.minecraft.world.gen.decorator.Decorator;
-import net.minecraft.world.gen.decorator.RangeDecoratorConfig;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.OreFeatureConfig;
 import net.urod.UltraRichOreDeposits;
 import net.urod.block.ModBlocks;
 import net.urod.block.UltraRichOreBlock;
+import net.urod.world.gen.decorator.ChanceRangeDecoratorConfig;
+import net.urod.world.gen.decorator.ModDecorators;
 
 public class ModGeneration {
     public ModGeneration() {
@@ -34,14 +34,15 @@ public class ModGeneration {
                             new OreFeatureConfig(
                                     OreFeatureConfig.Target.NATURAL_STONE,
                                     ((UltraRichOreBlock) ModBlocks.ULTRA_COAL_ORE).getRandomState(),
-                                    8 //Ore vein size
+                                    16 //Ore vein size
                             )).createDecoratedFeature(new ConfiguredDecorator<>(
-                            Decorator.COUNT_RANGE,
-                            new RangeDecoratorConfig(
-                                    50, //Number of veins per chunk
+                            ModDecorators.CHANCE_RANGE_COUNT,
+                            new ChanceRangeDecoratorConfig(
+                                    1, //Number of veins per chunk
                                     0, //Bottom Offset
                                     0, //Min y level
-                                    100 //Max y level
+                                    100, //Max y level
+                                    16 // 1 in [chance] per chunk
                             ))
                     )
 

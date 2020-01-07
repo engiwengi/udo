@@ -16,6 +16,8 @@ public class ModItems {
     public static final Item ULTRA_REDSTONE_ORE = ModItems.register("ultra_rich_redstone_ore", new BlockItem(ModBlocks.ULTRA_REDSTONE_ORE, new Item.Settings().group(ModItemGroups.ULTRA_DENSE_ORE)));
     public static final Item ULTRA_LAPIS_ORE = ModItems.register("ultra_rich_lapis_ore", new BlockItem(ModBlocks.ULTRA_LAPIS_ORE, new Item.Settings().group(ModItemGroups.ULTRA_DENSE_ORE)));
 
+    public static final Item SOIL_SAMPLER = ModItems.register("soil_sampler", new SoilSamplerItem(new Item.Settings().group(ModItemGroups.ULTRA_DENSE_ORE)));
+
     public ModItems() {
         UltraRichOreDeposits.getLogger().info(String.format("Registering %s Items", UltraRichOreDeposits.MOD_ID));
     }

@@ -1,11 +1,14 @@
 package net.urod.config;
 
-import java.util.Objects;
-
 public class URODConfigManager {
     private static URODConfig config;
 
     public static URODConfig getConfig() {
-        return Objects.requireNonNull(config);
+        return config == null ? init() : config;
+    }
+
+    public static URODConfig init() {
+        config = new URODConfig();
+        return config;
     }
 }
