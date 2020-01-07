@@ -9,36 +9,22 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
-import net.minecraft.state.property.IntProperty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldView;
 import net.urod.block.entity.UltraRichOreBlockEntity;
-
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
+import net.urod.state.property.QualityProperty;
+import net.urod.util.Quality;
 
 public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider {
-    private static final int maxQuantity = 10;
-    private static final IntProperty QUANTITY = IntProperty.of("quantity", 0, UltraRichOreBlock.maxQuantity);
+    public static final QualityProperty QUALITY = QualityProperty.of("quantity");
 
     UltraRichOreBlock(Settings settings) {
         super(settings);
-        setDefaultState((stateManager.getDefaultState().with(UltraRichOreBlock.QUANTITY, 10)));
+        setDefaultState((stateManager.getDefaultState().with(UltraRichOreBlock.QUALITY, Quality.ULTRA)));
     }
 
     public BlockState getRandomState() {
-        return getDefaultState().with(UltraRichOreBlock.QUANTITY, ThreadLocalRandom.current().nextInt((int) (UltraRichOreBlock.maxQuantity * 0.7F), UltraRichOreBlock.maxQuantity + 1));
-    }
-
-    @Override
-    public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        BlockEntity blockEntity = world.getBlockEntity(pos);
-        if (blockEntity instanceof UltraRichOreBlockEntity) {
-            ((UltraRichOreBlockEntity) blockEntity).scheduledTick();
-        }
+        return getDefaultState().with(UltraRichOreBlock.QUALITY, Quality.getRandomly());
     }
 
     @Override
@@ -47,45 +33,35 @@ public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider {
     }
 
     @Override
-    public void onBroken(IWorld world, BlockPos pos, BlockState state) {
-        super.onBroken(world, pos, state);
-        if (world.isClient()) {
-            int newQuantity = state.get(UltraRichOreBlock.QUANTITY) - 1;
-            if (newQuantity > 0) {
-                world.setBlockState(pos, state.with(UltraRichOreBlock.QUANTITY, newQuantity), 16);
+    public float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world, BlockPos pos) {
+        if (player.isUsingEffectiveTool(state)) {
+            BlockEntity be = world.getBlockEntity(pos);
+            if (be instanceof UltraRichOreBlockEntity) {
+                return ((UltraRichOreBlockEntity) be).calcBlockBreakingDelta();
+            } else {
+                return super.calcBlockBreakingDelta(state, player, world, pos);
+            }
+        } else {
+            return 0.005F;
+        }
+    }
+
+    public void onBreaking(PlayerEntity player, BlockState state, ServerWorld serverWorld, BlockPos pos) {
+        if (player.isUsingEffectiveTool(state) && !player.isCreative()) {
+            BlockEntity be = serverWorld.getBlockEntity(pos);
+            if (be instanceof UltraRichOreBlockEntity) {
+                ((UltraRichOreBlockEntity) be).onAttack(serverWorld, player, state);
             }
         }
     }
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(UltraRichOreBlock.QUANTITY);
+        builder.add(UltraRichOreBlock.QUALITY);
     }
 
     @Override
     public BlockEntity createBlockEntity(BlockView view) {
         return new UltraRichOreBlockEntity();
-    }
-
-    @Override
-    public int getTickRate(WorldView worldView) {
-        return 1;
-    }
-
-    @Override
-    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block block, BlockPos neighborPos, boolean moved) {
-        super.neighborUpdate(state, world, pos, block, neighborPos, moved);
-        if (!world.isClient()) {
-            scheduledTick(state, (ServerWorld) world, pos, new Random());
-        }
-    }
-
-    @Override
-    public void onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        super.onBreak(world, pos, state, player);
-//        int newQuantity = state.get(UltraRichOreBlock.QUANTITY) - 1;
-//        if (newQuantity > 0) {
-//            world.setBlockState(pos, state.with(UltraRichOreBlock.QUANTITY, newQuantity), 16);
-//        }
     }
 }
