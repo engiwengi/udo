@@ -2,7 +2,7 @@ package net.urod.item;
 
 import com.google.common.collect.Maps;
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.server.world.ServerWorld;
@@ -10,9 +10,8 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
-import net.urod.block.UltraRichOreBlock;
+import net.urod.block.entity.UltraRichOreBlockEntity;
 import net.urod.config.URODConfigManager;
 
 import java.util.Map;
@@ -77,21 +76,13 @@ public class SoilSamplerItem extends Item {
 
     private Map<Block, Integer> findNearbyOres(BlockPos pos, ServerWorld world) {
         Map<Block, Integer> map = Maps.newHashMap();
-        Box box = new Box(pos);
-        box = box.expand(150, 128, 150);
-
-        for (int i = (int) box.x1; i <= (int) box.x2; ++i) {
-            for (int j = (int) box.y1; j <= (int) box.y2; ++j) {
-                for (int k = (int) box.z1; k <= (int) box.z2; ++k) {
-                    BlockPos blockPos = new BlockPos(i, j, k);
-                    BlockState blockState = world.getBlockState(blockPos);
-                    if (blockState.getBlock() instanceof UltraRichOreBlock) {
-                        Integer distance = map.getOrDefault(blockState.getBlock(), Integer.MAX_VALUE);
-                        Integer blockDistance = pos.getManhattanDistance(blockPos);
-                        if (blockDistance < distance) {
-                            map.put(blockState.getBlock(), blockDistance);
-                        }
-                    }
+        for (BlockEntity blockEntity : world.blockEntities) {
+            if (blockEntity instanceof UltraRichOreBlockEntity) {
+                Block block = world.getBlockState(blockEntity.getPos()).getBlock();
+                Integer distance = map.getOrDefault(block, Integer.MAX_VALUE);
+                Integer blockDistance = pos.getManhattanDistance(blockEntity.getPos());
+                if (blockDistance < distance) {
+                    map.put(block, blockDistance);
                 }
             }
         }
