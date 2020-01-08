@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "urod:block/miner"
+    }
+  }
+}

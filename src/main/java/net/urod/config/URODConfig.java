@@ -13,6 +13,6 @@ public class URODConfig {
     }
 
     public boolean isEasySampler() {
-        return true;
+        return false;
     }
 }

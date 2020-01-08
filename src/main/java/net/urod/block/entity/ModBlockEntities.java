@@ -9,9 +9,10 @@ import net.urod.block.ModBlocks;
 
 public class ModBlockEntities {
     public static final BlockEntityType<UltraRichOreBlockEntity> ULTRA_RICH_ORE = ModBlockEntities.register("ultra_rich_ore",
-        BlockEntityType.Builder.create(UltraRichOreBlockEntity::new, ModBlocks.RICH_COAL_ORE).build(null));
+            BlockEntityType.Builder.create(UltraRichOreBlockEntity::new, ModBlocks.RICH_COAL_ORE, ModBlocks.RICH_IRON_ORE, ModBlocks.RICH_GOLD_ORE, ModBlocks.RICH_REDSTONE_ORE, ModBlocks.RICH_DIAMOND_ORE,
+                    ModBlocks.RICH_EMERALD_ORE, ModBlocks.RICH_LAPIS_ORE).build(null));
     public static final BlockEntityType<MinerBlockEntity> MINER = ModBlockEntities.register("rich_ore_miner",
-        BlockEntityType.Builder.create(MinerBlockEntity::new, ModBlocks.MINER).build(null));
+            BlockEntityType.Builder.create(MinerBlockEntity::new, ModBlocks.PRIMITIVE_MINER, ModBlocks.MINER, ModBlocks.ADVANCED_MINER, ModBlocks.ULTRA_MINER).build(null));
 
     public ModBlockEntities() {
         UltraRichOreDeposits.getLogger().info(String.format("Registering %s Block Entites", UltraRichOreDeposits.MOD_ID));
@@ -20,5 +21,4 @@ public class ModBlockEntities {
     private static <T extends BlockEntity> BlockEntityType<T> register(String id, BlockEntityType<T> blockEntityType) {
         return Registry.register(Registry.BLOCK_ENTITY, new Identifier(UltraRichOreDeposits.MOD_ID, id), blockEntityType);
     }
-
 }

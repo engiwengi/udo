@@ -2,12 +2,12 @@
 
 ## Planned Features
 
-- [ ] Rich Ore deposits
-  - [x] Has quality that will affect internal quantity
+- [x] Rich Ore deposits
+  - [x] Has oreQuality that will affect internal quantity
   - [x] Break with pickaxe very slowly to continuously give material while breaking
   - [x] Place Miner on top to mine deposit
   
-- [ ] World Gen
+- [x] World Gen
   - [x] Custom Decorator to be very rare
   - [ ] Override vanilla ore gen?
   - [ ] Compat with Cotton Resources
@@ -17,7 +17,11 @@
   - [ ] Different upgrades that make it more productive
   - [ ] Silk Touch upgrade
  
-- [ ] Soil Sampler Item
+- [x] Soil Sampler Item
   - [x] Describes nearby rich ore deposits when right clicked on grass
-  - [ ] Upgrades for Ore type and quality
+  - [ ] Upgrades for Ore type and oreQuality
+ 
+ - [x] Ore Sampler Item
+   - [x] Describes quality of ore
+ 
  

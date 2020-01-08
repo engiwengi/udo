@@ -20,6 +20,10 @@
     ]
   },
   "mixins": [
-    "urod.mixins.json"
+    "urod.mixins.json",
+    {
+      "config": "urod.client-mixins.json",
+      "environment": "client"
+    }
   ]
 }

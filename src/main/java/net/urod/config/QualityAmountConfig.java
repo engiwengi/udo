@@ -3,19 +3,19 @@ package net.urod.config;
 import com.google.common.collect.Maps;
 import net.minecraft.block.Block;
 import net.urod.block.ModBlocks;
-import net.urod.util.Quality;
+import net.urod.util.OreQuality;
 
 import java.util.Map;
 
 public class QualityAmountConfig {
-    private static Map<Block, Map<Quality, Range>> map = getMap();
+    private static Map<Block, Map<OreQuality, Range>> map = getMap();
 
-    private static Map<Block, Map<Quality, Range>> getMap() {
+    private static Map<Block, Map<OreQuality, Range>> getMap() {
         return getDefault();
     }
 
-    private static Map<Block, Map<Quality, Range>> getDefault() {
-        Map<Block, Map<Quality, Range>> newMap = Maps.newHashMap();
+    private static Map<Block, Map<OreQuality, Range>> getDefault() {
+        Map<Block, Map<OreQuality, Range>> newMap = Maps.newHashMap();
         newMap.put(ModBlocks.RICH_COAL_ORE, resourceMapWith(8, 16, 32, 64, 128));
         newMap.put(ModBlocks.RICH_IRON_ORE, resourceMapWith(4, 8, 16, 32, 64));
         newMap.put(ModBlocks.RICH_GOLD_ORE, resourceMapWith(4, 8, 16, 32, 64));
@@ -26,17 +26,17 @@ public class QualityAmountConfig {
         return newMap;
     }
 
-    private static Map<Quality, Range> resourceMapWith(int poor, int medium, int high, int ultra, int max) {
-        Map<Quality, Range> resourceMap = Maps.newHashMap();
-        resourceMap.put(Quality.POOR, new Range(poor, medium));
-        resourceMap.put(Quality.MEDIUM, new Range(medium, high));
-        resourceMap.put(Quality.HIGH, new Range(high, ultra));
-        resourceMap.put(Quality.ULTRA, new Range(ultra, max));
+    private static Map<OreQuality, Range> resourceMapWith(int poor, int medium, int high, int ultra, int max) {
+        Map<OreQuality, Range> resourceMap = Maps.newHashMap();
+        resourceMap.put(OreQuality.POOR, new Range(poor, medium));
+        resourceMap.put(OreQuality.MEDIUM, new Range(medium, high));
+        resourceMap.put(OreQuality.HIGH, new Range(high, ultra));
+        resourceMap.put(OreQuality.ULTRA, new Range(ultra, max));
         return resourceMap;
     }
 
-    public static Range getRangeForBlockQuality(Block block, Quality quality) {
-        return map.get(block).get(quality);
+    public static Range getRangeForOreQuality(Block block, OreQuality oreQuality) {
+        return map.get(block).get(oreQuality);
     }
 
     public static class Range {

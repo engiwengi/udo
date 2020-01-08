@@ -26,6 +26,8 @@ public class ModItems {
 
     // SAMPLER
     public static final Item SOIL_SAMPLER = ModItems.register("soil_sampler", new SoilSamplerItem(new Item.Settings().group(ModItemGroups.ULTRA_DENSE_ORE)));
+    public static final Item ORE_SAMPLER = ModItems.register("ore_sampler", new OreSamplerItem(new Item.Settings().group(ModItemGroups.ULTRA_DENSE_ORE)));
+
 
     public ModItems() {
         UltraRichOreDeposits.getLogger().info(String.format("Registering %s Items", UltraRichOreDeposits.MOD_ID));

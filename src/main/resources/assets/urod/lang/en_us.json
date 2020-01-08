@@ -1,3 +1,13 @@
 {
-  "block.urod.ultra_rich_coal_ore": "Rich Coal Ore"
+  "block.urod.ultra_rich_coal_ore": "Rich Coal Ore",
+  "block.urod.primitive_miner": "Primitive Miner",
+  "block.urod.advanced_miner": "Advanced Miner",
+  "block.urod.ultra_miner": "Ultra Miner",
+  "item.urod.soil_sampler": "Soil Sampler",
+  "item.urod.ore_sampler": "Ore Sampler",
+  "chat.urod.quality.inspect": "This rich ore deposit is of %s quality",
+  "property.urod.quality.poor": "poor",
+  "property.urod.quality.medium": "medium",
+  "property.urod.quality.high": "high",
+  "property.urod.quality.ultra_high": "ultra high"
 }

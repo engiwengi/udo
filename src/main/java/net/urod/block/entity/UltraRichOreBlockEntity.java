@@ -5,28 +5,30 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.World;
+import net.urod.UltraRichOreDeposits;
 import net.urod.block.UltraRichOreBlock;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 
 public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityClientSerializable {
     private final static double progressNeeded = 100;
-    private final static int decrementAmount = 4;
+    private final static int decrementAmount = 5;
     private int quantity = Integer.MIN_VALUE;
-    private double progress = 30;
+    private double progress = 0;
     private boolean isBeingMined = false;
     private PlayerEntity minedBy = null;
     private int whileMinedQuantity;
-    private Direction attackDirection;
 
     public UltraRichOreBlockEntity() {
         super(ModBlockEntities.ULTRA_RICH_ORE);
@@ -55,30 +57,14 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
         return toTag(compoundTag);
     }
 
-    public void onMachineInteraction() {
-
-    }
-
-    public void onAttackInteraction(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, PlayerEntity playerEntity, Direction direction) {
-        attackDirection = direction;
-        if (isBeingMined || !playerEntity.isUsingEffectiveTool(blockState)) {
-            if (playerEntity == minedBy) {
-                isBeingMined = false;
-                minedBy = null;
-                tickAgain(blockState.getBlock());
-            }
-        } else {
+    public void onBlockBreakStart(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+        if (!isBeingMined && minedBy == null && player.isUsingEffectiveTool(state)) {
+            UltraRichOreDeposits.getLogger().info("just started");
             isBeingMined = true;
             whileMinedQuantity = getQuantity();
-            minedBy = playerEntity;
+            minedBy = player;
             sync();
-            tickAgain(blockState.getBlock());
-        }
-    }
-
-    private void tickAgain(Block block) {
-        if (world instanceof ServerWorld) {
-            world.getBlockTickScheduler().schedule(pos, block, 1);
+            tickAgain(state.getBlock());
         }
     }
 
@@ -89,6 +75,12 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
             throw new IllegalStateException("Tried to get quantity before it has been synced!");
         }
         return bl ? initQuantity((ServerWorld) world) : quantity;
+    }
+
+    private void tickAgain(Block block) {
+        if (world instanceof ServerWorld) {
+            world.getBlockTickScheduler().schedule(pos, block, 1);
+        }
     }
 
     private int initQuantity(ServerWorld serverWorld) {
@@ -108,15 +100,10 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
             }
             if (shouldFakeBreak) {
                 serverWorld.playLevelEvent(2001, blockPos, Block.getRawIdFromState(blockState));
-                UltraRichOreBlock.dropStacks(blockState, serverWorld, blockPos, this, minedBy, minedBy.getMainHandStack(), attackDirection);
+                UltraRichOreBlock.dropStacks(blockState, serverWorld, blockPos, this, minedBy, minedBy.getMainHandStack(), Direction.UP);
                 minedBy.getMainHandStack().postMine(serverWorld, blockState, blockPos, minedBy);
             }
             tickAgain(blockState.getBlock());
-        } else {
-            progress = 0;
-            quantity = whileMinedQuantity;
-            markDirty();
-            sync();
         }
     }
 
@@ -125,7 +112,6 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
         whileMinedQuantity -= amount;
         if (whileMinedQuantity <= 0) {
             quantity = 0;
-            sync();
             serverWorld.breakBlock(pos, false, minedBy);
             return true;
         } else {
@@ -144,7 +130,7 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
             serverWorld.playLevelEvent(2001, pos, Block.getRawIdFromState(getCachedState()));
             return UltraRichOreBlock.getDroppedStacks(getCachedState(), serverWorld, pos, this);
         } else {
-            return null;
+            return Collections.emptyList();
         }
     }
 
@@ -153,12 +139,17 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
         quantity -= 1;
         if (quantity <= 0) {
             quantity = 0;
-            sync();
-            serverWorld.breakBlock(pos, false);
+            breakBlockNoSound(serverWorld, pos);
             return true;
         } else {
+            markDirty();
             return false;
         }
+    }
+
+    private void breakBlockNoSound(World world, BlockPos pos) {
+        FluidState fluidState = world.getFluidState(pos);
+        world.setBlockState(pos, fluidState.getBlockState(), 3);
     }
 
     public float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world) {
@@ -174,18 +165,39 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
         return quantity != Integer.MIN_VALUE;
     }
 
-    public void getNeighbours(IWorld iWorld, SortedSet<BlockPos> oreBlocks, Block block) {
+    public void getNeighbours(ServerWorld serverWorld, SortedSet<BlockPos> oreBlocks, Block block) {
+        if (quantity < 0) {
+            getQuantity();
+        }
         oreBlocks.add(pos);
         for (Direction direction : Direction.values()) {
-            getNeighboursDirection(iWorld, oreBlocks, block, direction);
+            getNeighboursDirection(serverWorld, oreBlocks, block, direction);
         }
     }
 
-    public void getNeighboursDirection(IWorld iWorld, SortedSet<BlockPos> oreBlocks, Block block, Direction direction) {
+    public void getNeighboursDirection(ServerWorld serverWorld, SortedSet<BlockPos> oreBlocks, Block block, Direction direction) {
         if (!oreBlocks.contains(pos.offset(direction))) {
-            BlockEntity be = iWorld.getBlockEntity(pos.offset(direction));
+            BlockEntity be = serverWorld.getBlockEntity(pos.offset(direction));
             if (be instanceof UltraRichOreBlockEntity && be.getCachedState().getBlock() == block) {
-                ((UltraRichOreBlockEntity) be).getNeighbours(iWorld, oreBlocks, block);
+                ((UltraRichOreBlockEntity) be).getNeighbours(serverWorld, oreBlocks, block);
+            }
+        }
+    }
+
+    public void onBlockBreakAbort(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+        onBlockBreakStop(state, world, pos, player);
+    }
+
+    public void onBlockBreakStop(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+        if (isBeingMined) {
+            if (player == minedBy) {
+                UltraRichOreDeposits.getLogger().info("just canceled");
+                quantity = whileMinedQuantity;
+                progress = 0;
+                isBeingMined = false;
+                minedBy = null;
+                markDirty();
+                sync();
             }
         }
     }

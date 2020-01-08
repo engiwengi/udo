@@ -17,7 +17,7 @@ import net.urod.world.gen.decorator.ModDecorators;
 public class ModGeneration {
     public ModGeneration() {
         UltraRichOreDeposits.getLogger().info(String.format("Handling %s Feature Generation",
-            UltraRichOreDeposits.MOD_ID));
+                UltraRichOreDeposits.MOD_ID));
         ModGeneration.handleDenseOreFeatureGeneration();
     }
 
@@ -41,15 +41,15 @@ public class ModGeneration {
                                           int topOffset, int maximum, int chance) {
         if (biome.getCategory() != Biome.Category.NETHER && biome.getCategory() != Biome.Category.THEEND) {
             biome.addFeature(GenerationStep.Feature.UNDERGROUND_ORES,
-                Feature.ORE.configure(new OreFeatureConfig(OreFeatureConfig.Target.NATURAL_STONE,
-                    ((UltraRichOreBlock) block).getRandomState(), size //Ore vein size
-                )).createDecoratedFeature(new ConfiguredDecorator<>(ModDecorators.CHANCE_RANGE_COUNT,
-                    new ChanceRangeDecoratorConfig(count, //Number of veins per chunk
-                    bottomOffset, //Bottom Offset
-                    topOffset, //Min y level
-                    maximum, //Max y level
-                    chance // 1 in [chance] per chunk
-                )))
+                    Feature.ORE.configure(new OreFeatureConfig(OreFeatureConfig.Target.NATURAL_STONE,
+                            ((UltraRichOreBlock) block).getRandomState(), size //Ore vein size
+                    )).createDecoratedFeature(new ConfiguredDecorator<>(ModDecorators.CHANCE_RANGE_COUNT,
+                            new ChanceRangeDecoratorConfig(count, //Number of veins per chunk
+                                    bottomOffset, //Bottom Offset
+                                    topOffset, //Min y level
+                                    maximum, //Max y level
+                                    chance // 1 in [chance] per chunk
+                            )))
 
             );
         }

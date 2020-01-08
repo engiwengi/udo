@@ -1,6 +1,5 @@
 package net.urod.block;
 
-import net.fabricmc.fabric.api.block.BlockAttackInteractionAware;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
@@ -13,24 +12,24 @@ import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
-import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.urod.api.block.BlockStopBreakingAware;
 import net.urod.block.entity.UltraRichOreBlockEntity;
 import net.urod.state.property.QualityProperty;
-import net.urod.util.Quality;
+import net.urod.util.OreQuality;
 
 import java.util.Random;
 
-public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider, BlockAttackInteractionAware {
+public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider, BlockStopBreakingAware {
     public static final QualityProperty QUALITY = QualityProperty.of("quality");
 
     UltraRichOreBlock(Settings settings) {
         super(settings);
-        setDefaultState((stateManager.getDefaultState().with(UltraRichOreBlock.QUALITY, Quality.ULTRA)));
+        setDefaultState((stateManager.getDefaultState().with(UltraRichOreBlock.QUALITY, OreQuality.ULTRA)));
     }
 
     public static void dropStacks(BlockState state, World world, BlockPos pos, BlockEntity blockEntity, Entity entity, ItemStack stack, Direction direction) {
@@ -55,13 +54,12 @@ public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider, 
         }
     }
 
-    public BlockState getRandomState() {
-        return getDefaultState().with(UltraRichOreBlock.QUALITY, Quality.getRandomly());
-    }
-
     @Override
-    public BlockState getPlacementState(ItemPlacementContext ctx) {
-        return getRandomState();
+    public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof UltraRichOreBlockEntity) {
+            ((UltraRichOreBlockEntity) be).onAttackedTick(state, world, pos);
+        }
     }
 
     @Override
@@ -76,10 +74,21 @@ public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider, 
     }
 
     @Override
-    public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-        BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof UltraRichOreBlockEntity) {
-            ((UltraRichOreBlockEntity) be).onAttackedTick(state, world, pos);
+    public BlockState getPlacementState(ItemPlacementContext ctx) {
+        return getRandomState();
+    }
+
+    public BlockState getRandomState() {
+        return getDefaultState().with(UltraRichOreBlock.QUALITY, OreQuality.getRandomly());
+    }
+
+    @Override
+    public void onBlockBreakStart(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+        if (world instanceof ServerWorld) {
+            BlockEntity be = world.getBlockEntity(pos);
+            if (be instanceof UltraRichOreBlockEntity) {
+                ((UltraRichOreBlockEntity) be).onBlockBreakStart(state, world, pos, player);
+            }
         }
     }
 
@@ -94,13 +103,22 @@ public class UltraRichOreBlock extends OreBlock implements BlockEntityProvider, 
     }
 
     @Override
-    public boolean onAttackInteraction(BlockState blockState, World world, BlockPos blockPos, PlayerEntity playerEntity, Hand hand, Direction direction) {
+    public void onBlockBreakStop(BlockState state, World world, BlockPos pos, PlayerEntity player) {
         if (world instanceof ServerWorld) {
-            BlockEntity be = world.getBlockEntity(blockPos);
+            BlockEntity be = world.getBlockEntity(pos);
             if (be instanceof UltraRichOreBlockEntity) {
-                ((UltraRichOreBlockEntity) be).onAttackInteraction(blockState, (ServerWorld) world, blockPos, playerEntity, direction);
+                ((UltraRichOreBlockEntity) be).onBlockBreakStop(state, world, pos, player);
             }
         }
-        return false;
+    }
+
+    @Override
+    public void onBlockBreakAbort(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+        if (world instanceof ServerWorld) {
+            BlockEntity be = world.getBlockEntity(pos);
+            if (be instanceof UltraRichOreBlockEntity) {
+                ((UltraRichOreBlockEntity) be).onBlockBreakAbort(state, world, pos, player);
+            }
+        }
     }
 }
