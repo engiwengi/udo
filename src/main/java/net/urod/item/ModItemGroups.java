@@ -10,7 +10,7 @@ import net.urod.block.ModBlocks;
 public class ModItemGroups {
     static final ItemGroup ULTRA_DENSE_ORE = FabricItemGroupBuilder.build(
             new Identifier(UltraRichOreDeposits.MOD_ID, "udo"),
-            () -> new ItemStack(ModBlocks.ULTRA_IRON_ORE));
+            () -> new ItemStack(ModBlocks.RICH_IRON_ORE));
 
     public ModItemGroups() {
         UltraRichOreDeposits.getLogger().info(String.format("Registering %s Item Groups", UltraRichOreDeposits.MOD_ID));

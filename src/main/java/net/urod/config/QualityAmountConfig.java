@@ -14,19 +14,29 @@ public class QualityAmountConfig {
         return getDefault();
     }
 
-    public static Range getRangeForBlockQuality(Block block, Quality quality) {
-        return map.get(block).get(quality);
-    }
-
     private static Map<Block, Map<Quality, Range>> getDefault() {
         Map<Block, Map<Quality, Range>> newMap = Maps.newHashMap();
-        Map<Quality, Range> coalMap = Maps.newHashMap();
-        coalMap.put(Quality.POOR, new Range(8, 16));
-        coalMap.put(Quality.MEDIUM, new Range(16, 32));
-        coalMap.put(Quality.HIGH, new Range(32, 64));
-        coalMap.put(Quality.ULTRA, new Range(64, 128));
-        newMap.put(ModBlocks.ULTRA_COAL_ORE, coalMap);
+        newMap.put(ModBlocks.RICH_COAL_ORE, resourceMapWith(8, 16, 32, 64, 128));
+        newMap.put(ModBlocks.RICH_IRON_ORE, resourceMapWith(4, 8, 16, 32, 64));
+        newMap.put(ModBlocks.RICH_GOLD_ORE, resourceMapWith(4, 8, 16, 32, 64));
+        newMap.put(ModBlocks.RICH_REDSTONE_ORE, resourceMapWith(4, 8, 16, 32, 64));
+        newMap.put(ModBlocks.RICH_DIAMOND_ORE, resourceMapWith(2, 4, 8, 16, 32));
+        newMap.put(ModBlocks.RICH_LAPIS_ORE, resourceMapWith(2, 4, 8, 16, 32));
+        newMap.put(ModBlocks.RICH_EMERALD_ORE, resourceMapWith(2, 4, 8, 16, 32));
         return newMap;
+    }
+
+    private static Map<Quality, Range> resourceMapWith(int poor, int medium, int high, int ultra, int max) {
+        Map<Quality, Range> resourceMap = Maps.newHashMap();
+        resourceMap.put(Quality.POOR, new Range(poor, medium));
+        resourceMap.put(Quality.MEDIUM, new Range(medium, high));
+        resourceMap.put(Quality.HIGH, new Range(high, ultra));
+        resourceMap.put(Quality.ULTRA, new Range(ultra, max));
+        return resourceMap;
+    }
+
+    public static Range getRangeForBlockQuality(Block block, Quality quality) {
+        return map.get(block).get(quality);
     }
 
     public static class Range {

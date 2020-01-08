@@ -3,9 +3,9 @@
   "package": "net.urod.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "MixinClientPlayerInteractionManager"
   ],
   "client": [
+    "MixinClientPlayerInteractionManager"
   ],
   "injectors": {
     "defaultRequire": 1

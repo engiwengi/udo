@@ -5,15 +5,18 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
-import net.urod.UltraRichOreDeposits;
+import net.minecraft.world.IWorld;
 import net.urod.block.UltraRichOreBlock;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.SortedSet;
 
 public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityClientSerializable {
     private final static double progressNeeded = 100;
@@ -30,6 +33,17 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
     }
 
     @Override
+    public void fromClientTag(CompoundTag compoundTag) {
+        fromTag(compoundTag);
+    }
+
+    @Override
+    public void fromTag(CompoundTag tag) {
+        super.fromTag(tag);
+        quantity = (tag.contains("quantity")) ? tag.getInt("quantity") : Integer.MIN_VALUE;
+    }
+
+    @Override
     public CompoundTag toTag(CompoundTag tag) {
         super.toTag(tag);
         tag.putInt("quantity", quantity);
@@ -37,93 +51,34 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
     }
 
     @Override
-    public void fromTag(CompoundTag tag) {
-        super.fromTag(tag);
-        quantity = (tag.contains("quantity")) ? tag.getInt("quantity") : -1;
-    }
-
-    public boolean decrement(ServerWorld serverWorld) {
-        return decrement(serverWorld, 1);
-    }
-
-    public boolean decrement(ServerWorld serverWorld, int amount) {
-        if (world.isClient) {
-            UltraRichOreDeposits.getLogger().error("called decrement with the clientworld");
-        }
-        whileMinedQuantity -= amount;
-        if (whileMinedQuantity <= 0) {
-            quantity = 0;
-            sync();
-            serverWorld.breakBlock(pos, false, minedBy);
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    private int initQuantity(ServerWorld serverWorld) {
-        markDirty();
-        BlockState state = serverWorld.getBlockState(pos);
-        quantity = state.get(UltraRichOreBlock.QUALITY).getNewQuantity(state.getBlock());
-        return quantity;
-    }
-
-    @Override
-    public void fromClientTag(CompoundTag compoundTag) {
-        fromTag(compoundTag);
-    }
-
-    @Override
     public CompoundTag toClientTag(CompoundTag compoundTag) {
         return toTag(compoundTag);
     }
 
+    public void onMachineInteraction() {
+
+    }
+
     public void onAttackInteraction(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos, PlayerEntity playerEntity, Direction direction) {
-        if (world.isClient) {
-            UltraRichOreDeposits.getLogger().error("called onAttackInteraction with the clientworld");
-        }
-
         attackDirection = direction;
-
         if (isBeingMined || !playerEntity.isUsingEffectiveTool(blockState)) {
             if (playerEntity == minedBy) {
                 isBeingMined = false;
                 minedBy = null;
-                UltraRichOreDeposits.getLogger().info(String.format("syncing after stop mining"));
-                markDirty();
-                sync();
+                tickAgain(blockState.getBlock());
             }
         } else {
             isBeingMined = true;
             whileMinedQuantity = getQuantity();
             minedBy = playerEntity;
-            serverWorld.getBlockTickScheduler().schedule(blockPos, blockState.getBlock(), 1);
-            UltraRichOreDeposits.getLogger().info(String.format("syncing on start mining"));
             sync();
+            tickAgain(blockState.getBlock());
         }
     }
 
-    public void onAttackedTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos) {
-        if (isBeingMined) {
-            boolean shouldFakeBreak = false;
-            progress += Math.sqrt(minedBy.getBlockBreakingSpeed(blockState));
-            if (progress > progressNeeded) {
-                progress = 0;
-                shouldFakeBreak = decrement(serverWorld, decrementAmount);
-            }
-
-            if (shouldFakeBreak) {
-                serverWorld.playLevelEvent(2001, blockPos, Block.getRawIdFromState(blockState));
-                UltraRichOreBlock.dropStacks(blockState, serverWorld, blockPos, this, minedBy, minedBy.getMainHandStack(), attackDirection);
-                minedBy.getMainHandStack().postMine(serverWorld, blockState, blockPos, minedBy);
-            }
-            serverWorld.getBlockTickScheduler().schedule(blockPos, blockState.getBlock(), 1);
-        } else {
-            progress = 0;
-            quantity = whileMinedQuantity;
-            markDirty();
-            UltraRichOreDeposits.getLogger().info(String.format("syncing after stop mining on tick"));
-            sync();
+    private void tickAgain(Block block) {
+        if (world instanceof ServerWorld) {
+            world.getBlockTickScheduler().schedule(pos, block, 1);
         }
     }
 
@@ -136,8 +91,74 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
         return bl ? initQuantity((ServerWorld) world) : quantity;
     }
 
-    private boolean hasQuantity() {
-        return quantity != Integer.MIN_VALUE;
+    private int initQuantity(ServerWorld serverWorld) {
+        markDirty();
+        BlockState state = serverWorld.getBlockState(pos);
+        quantity = state.get(UltraRichOreBlock.QUALITY).getNewQuantity(state.getBlock());
+        return quantity;
+    }
+
+    public void onAttackedTick(BlockState blockState, ServerWorld serverWorld, BlockPos blockPos) {
+        if (isBeingMined) {
+            boolean shouldFakeBreak = false;
+            progress += Math.sqrt(minedBy.getBlockBreakingSpeed(blockState));
+            if (progress > progressNeeded) {
+                progress = 0;
+                shouldFakeBreak = !decrementWhileMining(serverWorld, decrementAmount);
+            }
+            if (shouldFakeBreak) {
+                serverWorld.playLevelEvent(2001, blockPos, Block.getRawIdFromState(blockState));
+                UltraRichOreBlock.dropStacks(blockState, serverWorld, blockPos, this, minedBy, minedBy.getMainHandStack(), attackDirection);
+                minedBy.getMainHandStack().postMine(serverWorld, blockState, blockPos, minedBy);
+            }
+            tickAgain(blockState.getBlock());
+        } else {
+            progress = 0;
+            quantity = whileMinedQuantity;
+            markDirty();
+            sync();
+        }
+    }
+
+    // Returns true if decrementing broke the block
+    public boolean decrementWhileMining(ServerWorld serverWorld, int amount) {
+        whileMinedQuantity -= amount;
+        if (whileMinedQuantity <= 0) {
+            quantity = 0;
+            sync();
+            serverWorld.breakBlock(pos, false, minedBy);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public List<ItemStack> onMachineTick(ServerWorld serverWorld, int speed) {
+        boolean shouldFakeBreak = false;
+        progress += speed;
+        if (progress > progressNeeded) {
+            progress = 0;
+            shouldFakeBreak = !decrementWhileMachine(serverWorld);
+        }
+        if (shouldFakeBreak) {
+            serverWorld.playLevelEvent(2001, pos, Block.getRawIdFromState(getCachedState()));
+            return UltraRichOreBlock.getDroppedStacks(getCachedState(), serverWorld, pos, this);
+        } else {
+            return null;
+        }
+    }
+
+    // Returns true if decrementing broke the block
+    public boolean decrementWhileMachine(ServerWorld serverWorld) {
+        quantity -= 1;
+        if (quantity <= 0) {
+            quantity = 0;
+            sync();
+            serverWorld.breakBlock(pos, false);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView world) {
@@ -146,6 +167,26 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
             return (float) quantityPerTick / ((float) getQuantity() / decrementAmount);
         } else {
             return 0.0F;
+        }
+    }
+
+    private boolean hasQuantity() {
+        return quantity != Integer.MIN_VALUE;
+    }
+
+    public void getNeighbours(IWorld iWorld, SortedSet<BlockPos> oreBlocks, Block block) {
+        oreBlocks.add(pos);
+        for (Direction direction : Direction.values()) {
+            getNeighboursDirection(iWorld, oreBlocks, block, direction);
+        }
+    }
+
+    public void getNeighboursDirection(IWorld iWorld, SortedSet<BlockPos> oreBlocks, Block block, Direction direction) {
+        if (!oreBlocks.contains(pos.offset(direction))) {
+            BlockEntity be = iWorld.getBlockEntity(pos.offset(direction));
+            if (be instanceof UltraRichOreBlockEntity && be.getCachedState().getBlock() == block) {
+                ((UltraRichOreBlockEntity) be).getNeighbours(iWorld, oreBlocks, block);
+            }
         }
     }
 }
