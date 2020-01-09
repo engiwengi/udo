@@ -15,11 +15,9 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.urod.UltraRichOreDeposits;
 import net.urod.block.UltraRichOreBlock;
+import net.urod.util.BlockPosWithDistFromMiner;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.SortedSet;
+import java.util.*;
 
 public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityClientSerializable {
     private final static double progressNeeded = 100;
@@ -127,7 +125,7 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
             shouldFakeBreak = !decrementWhileMachine(serverWorld);
         }
         if (shouldFakeBreak) {
-            serverWorld.playLevelEvent(2001, pos, Block.getRawIdFromState(getCachedState()));
+            //            serverWorld.playLevelEvent(2001, pos, Block.getRawIdFromState(getCachedState()));
             return UltraRichOreBlock.getDroppedStacks(getCachedState(), serverWorld, pos, this);
         } else {
             return Collections.emptyList();
@@ -148,6 +146,7 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
     }
 
     private void breakBlockNoSound(World world, BlockPos pos) {
+        world.playLevelEvent(2001, pos, Block.getRawIdFromState(getCachedState()));
         FluidState fluidState = world.getFluidState(pos);
         world.setBlockState(pos, fluidState.getBlockState(), 3);
     }
@@ -163,6 +162,46 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
 
     private boolean hasQuantity() {
         return quantity != Integer.MIN_VALUE;
+    }
+
+    public void loadDeposit(ServerWorld serverWorld, TreeSet<BlockPosWithDistFromMiner> oreBlocks, Block block) {
+        Map<BlockPos, Integer> scoreMap = new HashMap<>();
+        int rounds = 0;
+        addToMap(scoreMap, rounds);
+        Set<BlockPos> newPosSet = new HashSet<>();
+        Set<BlockPos> nextPosSet = new HashSet<>();
+        newPosSet.add(pos);
+        while (!newPosSet.isEmpty() && rounds < 64) {
+            rounds++;
+            for (BlockPos blockPos : newPosSet) {
+                for (Direction direction : Direction.values()) {
+                    BlockEntity be = serverWorld.getBlockEntity(blockPos.offset(direction));
+                    if (be instanceof UltraRichOreBlockEntity && be.getCachedState().getBlock() == block) {
+                        if (((UltraRichOreBlockEntity) be).addToMap(scoreMap, rounds)) {
+                            nextPosSet.add(be.getPos());
+                        }
+                    }
+                }
+
+            }
+            newPosSet.clear();
+            newPosSet.addAll(nextPosSet);
+            nextPosSet.clear();
+        }
+        for (Map.Entry<BlockPos, Integer> entry : scoreMap.entrySet()) {
+            oreBlocks.add(new BlockPosWithDistFromMiner(entry.getKey(), entry.getValue()));
+        }
+    }
+
+    public boolean addToMap(Map<BlockPos, Integer> map, int distance) {
+        if (quantity < 0) {
+            getQuantity();
+        }
+        if (distance < map.getOrDefault(pos, distance + 1)) {
+            map.put(pos, distance);
+            return true;
+        }
+        return false;
     }
 
     public void getNeighbours(ServerWorld serverWorld, SortedSet<BlockPos> oreBlocks, Block block) {
