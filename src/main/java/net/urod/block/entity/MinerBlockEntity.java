@@ -105,8 +105,8 @@ public class MinerBlockEntity extends BlockEntity implements Tickable {
     private boolean fromNextOreBlock() {
         Objects.requireNonNull(world);
         nextOreBlock().ifPresent((nextPos) -> setWorkingBlockEntityAs(world.getBlockEntity(nextPos)));
-        // We set it and everything is gravy || No blocks left to set so give up || Try and set the next one
-        return workingBlockEntity.isPresent() || workingDeposit.isEmpty() || fromNextOreBlock();
+        // We set it and everything is gravy || (There are blocks left && Try and set the next one)
+        return workingBlockEntity.isPresent() || (!workingDeposit.isEmpty() && fromNextOreBlock());
     }
 
     private Optional<BlockPos> nextOreBlock() {
@@ -123,7 +123,6 @@ public class MinerBlockEntity extends BlockEntity implements Tickable {
             List<ItemStack> itemStacks = getWorkingBlockEntity().onMachineTick((ServerWorld) world,
                 ((MinerBlock) getCachedState().getBlock()).getMiningSpeed());
             for (ItemStack stack : itemStacks) {
-                outputInventory.ifPresent((inventory -> inventory.setInvStack()));
                 Block.dropStack(world, pos, stack);
             }
         }
