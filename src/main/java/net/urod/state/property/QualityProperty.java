@@ -13,5 +13,4 @@ public class QualityProperty extends EnumProperty<OreQuality> {
     public static QualityProperty of(String name) {
         return new QualityProperty(name);
     }
-
 }

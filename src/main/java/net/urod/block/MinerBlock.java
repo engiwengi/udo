@@ -11,7 +11,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.urod.block.entity.MinerBlockEntity;
-import net.urod.block.entity.UltraRichOreBlockEntity;
 
 public class MinerBlock extends Block implements BlockEntityProvider {
     private final Stage stage;
@@ -46,10 +45,7 @@ public class MinerBlock extends Block implements BlockEntityProvider {
         if (world instanceof ServerWorld) {
             BlockEntity be = world.getBlockEntity(pos);
             if (be instanceof MinerBlockEntity) {
-                BlockEntity oreBlockEntity = world.getBlockEntity(pos.down());
-                if (oreBlockEntity instanceof UltraRichOreBlockEntity) {
-                    ((MinerBlockEntity) be).onPlaced((ServerWorld) world, pos, (UltraRichOreBlockEntity) oreBlockEntity);
-                }
+                ((MinerBlockEntity) be).onInit();
             }
         }
     }

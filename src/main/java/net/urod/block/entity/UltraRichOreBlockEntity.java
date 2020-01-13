@@ -182,7 +182,6 @@ public class UltraRichOreBlockEntity extends BlockEntity implements BlockEntityC
                         }
                     }
                 }
-
             }
             newPosSet.clear();
             newPosSet.addAll(nextPosSet);

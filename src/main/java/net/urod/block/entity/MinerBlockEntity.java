@@ -3,49 +3,39 @@ package net.urod.block.entity;
 import com.google.common.collect.Sets;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
 import net.urod.block.MinerBlock;
 import net.urod.util.BlockPosWithDistFromMiner;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 
 public class MinerBlockEntity extends BlockEntity implements Tickable {
-    private BlockPos masterPos;
-    private TreeSet<BlockPosWithDistFromMiner> oreBlocks;
-    private BlockPos workingPos = BlockPos.ORIGIN;
-    private UltraRichOreBlockEntity currentBlockEntity = null;
+    private TreeSet<BlockPosWithDistFromMiner> workingDeposit = emptyDeposit();
+    private Optional<BlockPos> workingPos = Optional.empty();
+    private Optional<UltraRichOreBlockEntity> workingBlockEntity = Optional.empty();
+    private Optional<Inventory> outputInventory = Optional.empty();
     private boolean firstTick = true;
-
-    //TODO: clean up setWorkingPos
 
     public MinerBlockEntity() {
         super(ModBlockEntities.MINER);
-        oreBlocks = newOreBlocks();
     }
 
-    static public TreeSet<BlockPosWithDistFromMiner> newOreBlocks() {
+    static public TreeSet<BlockPosWithDistFromMiner> emptyDeposit() {
         return Sets.newTreeSet(Comparator.comparingInt(BlockPosWithDistFromMiner::getD).thenComparingLong(BlockPosWithDistFromMiner::asLong));
     }
 
-    @Override
-    public void setWorld(World world, BlockPos blockPos) {
-        super.setWorld(world, blockPos);
-        masterPos = pos.down();
-    }
+    // I don't think saving is necessary since we can init on first tick
 
-
-    // removed for now to just init on first tick instead
     //    @Override
     //    public void fromTag(CompoundTag tag) {
     //        super.fromTag(tag);
     //        oreBlocks =
-    //                Arrays.stream(tag.getLongArray("oreblocks")).mapToObj(BlockPosWithDistFromMiner::fromLong).collect(Collectors.toCollection(MinerBlockEntity::newOreBlocks));
+    //                Arrays.stream(tag.getLongArray("oreblocks")).mapToObj(BlockPosWithDistFromMiner::fromLong).collect(Collectors.toCollection
+    //                (MinerBlockEntity::newOreBlocks));
     //        setWorkingPos(new BlockPosWithDistFromMiner(BlockPos.fromLong(tag.getLong("workingpos")), 0));
     //    }
     //
@@ -57,91 +47,70 @@ public class MinerBlockEntity extends BlockEntity implements Tickable {
     //        return tag;
     //    }
 
-    private void setWorkingPos(BlockPosWithDistFromMiner workingPos) {
-        if (workingPos == null) {
-            this.workingPos = BlockPos.ORIGIN;
-        } else {
-            this.workingPos = workingPos.toBlockPos();
-        }
+    private void setWorkingPos(BlockPos newWorkingPos) {
+        workingPos = Optional.ofNullable(newWorkingPos);
     }
 
-    public void onPlaced(ServerWorld serverWorld, BlockPos blockPos, UltraRichOreBlockEntity oreBlockEntity) {
-        onInit();
-    }
 
-    private void setOreBlocks() {
-        BlockEntity be = world.getBlockEntity(masterPos);
+    private boolean trySetWorkingDeposit() {
+        Objects.requireNonNull(world);
+        BlockEntity be = world.getBlockEntity(pos.down());
         if (be instanceof UltraRichOreBlockEntity) {
-            TreeSet<BlockPosWithDistFromMiner> tempOreBlocks = newOreBlocks();
-            ((UltraRichOreBlockEntity) be).loadDeposit((ServerWorld) world, tempOreBlocks, world.getBlockState(masterPos).getBlock());
-            //            ((UltraRichOreBlockEntity) be).getNeighbours((ServerWorld) world, tempOreBlocks, world.getBlockState(masterPos).getBlock());
-            oreBlocks.addAll(tempOreBlocks);
+            TreeSet<BlockPosWithDistFromMiner> tempOreBlocks = emptyDeposit();
+            ((UltraRichOreBlockEntity) be).loadDeposit((ServerWorld) world, tempOreBlocks, world.getBlockState(pos.down()).getBlock());
+            workingDeposit.addAll(tempOreBlocks);
         }
+        return !workingDeposit.isEmpty();
     }
 
-    private void onInit() {
+    private boolean trySetWorkingBlockEntity() {
+        return (fromWorkingPos() || fromNextOreBlock());
+    }
+
+    public void onInit() {
         if (world instanceof ServerWorld) {
-            setOreBlocks();
-            setWorkingPos(oreBlocks.pollLast());
-            if (!trySetCurrentBEFromWorkingPos()) {
-                trySetCurrentBEFromNextOreBlock();
+            if (trySetWorkingDeposit()) {
+                setWorkingPos(workingDeposit.pollLast().toBlockPos());
+                getWorkingBlockEntity();
             }
         }
     }
 
-    private boolean trySetCurrentBEFromWorkingPos() {
-        if (workingPos != BlockPos.ORIGIN) {
-            if (world != null) {
-                BlockEntity be = world.getBlockEntity(workingPos);
-                if (be instanceof UltraRichOreBlockEntity && !be.isRemoved()) {
-                    currentBlockEntity = (UltraRichOreBlockEntity) be;
-                    return true;
-                } else {
-                    setWorkingPos(null);
-                }
-            }
+    private boolean fromWorkingPos() {
+        Objects.requireNonNull(world);
+        workingPos.ifPresent((blockPos -> setWorkingBlockEntityAs(world.getBlockEntity(blockPos))));
+        return workingBlockEntity.isPresent();
+    }
+
+    private UltraRichOreBlockEntity getWorkingBlockEntity() {
+        return workingBlockEntity.filter(this::validOreBlock).orElse(trySetWorkingBlockEntity() ? getWorkingBlockEntity() : null);
+    }
+
+    private void setWorkingBlockEntityAs(BlockEntity be) {
+        workingBlockEntity =
+            Optional.ofNullable(be).filter((blockEntity -> blockEntity instanceof UltraRichOreBlockEntity)).map((blockEntity -> (UltraRichOreBlockEntity) blockEntity));
+        // Also reset the working pos here since the working block entity was probably changed
+        setWorkingPos(workingBlockEntity.map(BlockEntity::getPos).orElse(null));
+    }
+
+    private boolean validOreBlock(BlockEntity be) {
+        Objects.requireNonNull(world);
+        if (((be instanceof UltraRichOreBlockEntity)) && (!be.isRemoved())) {
+            BlockEntity masterBlockEntity = world.getBlockEntity(pos.down());
+            return masterBlockEntity instanceof UltraRichOreBlockEntity && !masterBlockEntity.isRemoved() && masterBlockEntity.getCachedState().getBlock() == be.getCachedState().getBlock();
         }
         return false;
     }
 
-    private UltraRichOreBlockEntity getCurrentBlockEntity() {
-        if (currentBlockEntity == null || currentBlockEntity.isRemoved()) {
-            currentBlockEntity = null;
-            if (!trySetCurrentBEFromWorkingPos() && !trySetCurrentBEFromNextOreBlock()) {
-                if (currentBlockEntity != null) {
-                    setWorkingPos(new BlockPosWithDistFromMiner(currentBlockEntity.getPos(), 0));
-                }
-            }
-        }
-        return currentBlockEntity;
+    private boolean fromNextOreBlock() {
+        Objects.requireNonNull(world);
+        nextOreBlock().ifPresent((nextPos) -> setWorkingBlockEntityAs(world.getBlockEntity(nextPos)));
+        // We set it and everything is gravy || No blocks left to set so give up || Try and set the next one
+        return workingBlockEntity.isPresent() || workingDeposit.isEmpty() || fromNextOreBlock();
     }
 
-    private boolean trySetCurrentBEFromNextOreBlock() {
-        BlockPosWithDistFromMiner nextPos = oreBlocks.pollLast();
-        if (nextPos != null && world != null) {
-            BlockEntity be = world.getBlockEntity(nextPos.toBlockPos());
-            if (invalidBlockEntity(be)) {
-                return trySetCurrentBEFromNextOreBlock();
-            } else {
-                setWorkingPos(be == null ? null : new BlockPosWithDistFromMiner(be.getPos(), 0));
-                currentBlockEntity = (UltraRichOreBlockEntity) be;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean invalidBlockEntity(BlockEntity be) {
-        if ((world == null) || (!(be instanceof UltraRichOreBlockEntity)) || (be.isRemoved())) {
-            return true;
-        } else {
-            BlockEntity masterBE = world.getBlockEntity(masterPos);
-            if ((!(masterBE instanceof UltraRichOreBlockEntity)) || (masterBE.isRemoved())) {
-                return true;
-            } else {
-                return masterBE.getCachedState().getBlock() != be.getCachedState().getBlock();
-            }
-        }
+    private Optional<BlockPos> nextOreBlock() {
+        return Optional.ofNullable(workingDeposit.pollLast()).map(BlockPosWithDistFromMiner::toBlockPos);
     }
 
     @Override
@@ -150,9 +119,11 @@ public class MinerBlockEntity extends BlockEntity implements Tickable {
             firstTick = false;
             onInit();
         }
-        if (world instanceof ServerWorld && getCurrentBlockEntity() != null) {
-            List<ItemStack> itemStacks = getCurrentBlockEntity().onMachineTick((ServerWorld) world, ((MinerBlock) getCachedState().getBlock()).getMiningSpeed());
+        if (world instanceof ServerWorld && getWorkingBlockEntity() != null) {
+            List<ItemStack> itemStacks = getWorkingBlockEntity().onMachineTick((ServerWorld) world,
+                ((MinerBlock) getCachedState().getBlock()).getMiningSpeed());
             for (ItemStack stack : itemStacks) {
+                outputInventory.ifPresent((inventory -> inventory.setInvStack()));
                 Block.dropStack(world, pos, stack);
             }
         }

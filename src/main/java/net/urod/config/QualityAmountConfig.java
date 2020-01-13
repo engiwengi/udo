@@ -14,6 +14,7 @@ public class QualityAmountConfig {
         return getDefault();
     }
 
+
     private static Map<Block, Map<OreQuality, Range>> getDefault() {
         Map<Block, Map<OreQuality, Range>> newMap = Maps.newHashMap();
         newMap.put(ModBlocks.RICH_COAL_ORE, resourceMapWith(8, 16, 32, 64, 128));

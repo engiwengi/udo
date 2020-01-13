@@ -7,14 +7,7 @@ import net.urod.config.QualityAmountConfig;
 import java.util.concurrent.ThreadLocalRandom;
 
 public enum OreQuality implements StringIdentifiable {
-    POOR("poor") {
-    },
-    MEDIUM("average") {
-    },
-    HIGH("high") {
-    },
-    ULTRA("ultra_high") {
-    };
+    POOR("poor"), MEDIUM("average"), HIGH("high"), ULTRA("ultra_high");
 
     private final String name;
 
@@ -23,17 +16,16 @@ public enum OreQuality implements StringIdentifiable {
     }
 
     public static OreQuality getRandomly() {
-        return OreQuality.POOR;
-        //        int randInt = ThreadLocalRandom.current().nextInt(100);
-        //        if (randInt < 40) {
-        //            return Quality.POOR;
-        //        } else if (randInt < 75) {
-        //            return Quality.MEDIUM;
-        //        } else if (randInt < 95) {
-        //            return Quality.HIGH;
-        //        } else {
-        //            return Quality.ULTRA;
-        //        }
+        int randInt = ThreadLocalRandom.current().nextInt(100);
+        if (randInt < 40) {
+            return OreQuality.POOR;
+        } else if (randInt < 75) {
+            return OreQuality.MEDIUM;
+        } else if (randInt < 95) {
+            return OreQuality.HIGH;
+        } else {
+            return OreQuality.ULTRA;
+        }
     }
 
     public int getNewQuantity(Block block) {

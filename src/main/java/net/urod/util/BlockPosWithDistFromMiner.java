@@ -16,6 +16,7 @@ public class BlockPosWithDistFromMiner {
     private static final int BIT_SHIFT_Z;
     private static final int BIT_SHIFT_X;
     private static final int BIT_SHIFT_Y;
+    private static final int BIT_SHIFT_D = 0;
 
     static {
         SIZE_BITS_Z = SIZE_BITS_X;
@@ -33,7 +34,6 @@ public class BlockPosWithDistFromMiner {
     int x;
     int y;
     int z;
-
 
     public BlockPosWithDistFromMiner(BlockPos blockPos, int distance) {
         x = blockPos.getX();
@@ -54,28 +54,23 @@ public class BlockPosWithDistFromMiner {
     }
 
     public static int unpackLongX(long x) {
-        return (int) (x << 64 - BIT_SHIFT_X - SIZE_BITS_X >> 64 - SIZE_BITS_X);
+        return (int) ((x >> BIT_SHIFT_X) & BITS_X);
     }
 
     public static int unpackLongY(long y) {
-        return (int) (y << 64 - BIT_SHIFT_Y - SIZE_BITS_Y >> 64 - SIZE_BITS_Y);
+        return (int) ((y >> BIT_SHIFT_Y) & BITS_Y);
     }
 
     public static int unpackLongZ(long z) {
-        return (int) (z << 64 - BIT_SHIFT_Z - SIZE_BITS_Z >> 64 - SIZE_BITS_Z);
+        return (int) ((z >> BIT_SHIFT_Z) & BITS_Z);
     }
 
     public static int unpackLongD(long d) {
-        return (int) (d << 64 - SIZE_BITS_D >> 64 - SIZE_BITS_Z);
+        return (int) ((d >> BIT_SHIFT_D) & BITS_D);
     }
 
     public BlockPos toBlockPos() {
         return new BlockPos(x, y, z);
-    }
-
-    @Override
-    public int hashCode() {
-        return (int) asLong();
     }
 
     public long asLong() {
@@ -87,7 +82,7 @@ public class BlockPosWithDistFromMiner {
         l |= ((long) x & BITS_X) << BIT_SHIFT_X;
         l |= ((long) y & BITS_Y) << BIT_SHIFT_Y;
         l |= ((long) z & BITS_Z) << BIT_SHIFT_Z;
-        l |= ((long) d & BITS_D) << 0;
+        l |= ((long) d & BITS_D) << BIT_SHIFT_D;
         return l;
     }
 
